@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OmniClean Analytics | Interactive Python Data Cleaning Engine Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --panel: #111827;
+      --panel-border: #1f293d;
+      --accent: #38bdf8;
+      --accent-glow: rgba(56, 189, 248, 0.2);
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --code-bg: #030712;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      line-height: 1.5;
+      padding-bottom: 60px;
+    }
+    header {
+      background: var(--panel);
+      border-bottom: 1px solid var(--panel-border);
+      padding: 18px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .brand {
+      font-size: 1.3rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand span { color: var(--accent); }
+    .status-pill {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--success);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--success);
+      border-radius: 50%;
+      animation: pulse 1.8s infinite;
+    }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    .container {
+      max-width: 1200px;
+      margin: 30px auto;
+      padding: 0 24px;
+    }
+    .hero-box {
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      border: 1px solid var(--panel-border);
+      border-radius: 16px;
+      padding: 30px;
+      margin-bottom: 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+    .hero-box h1 {
+      font-size: 1.8rem;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+    .hero-box p { color: var(--text-muted); font-size: 0.95rem; max-width: 650px; }
+    
+    .clean-btn {
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      color: #fff;
+      font-size: 1.05rem;
+      font-weight: 700;
+      padding: 14px 28px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 4px 20px rgba(37, 99, 235, 0.4);
+      transition: all 0.2s;
+    }
+    .clean-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 25px rgba(37, 99, 235, 0.6);
+    }
+
+    /* Metric Counters */
+    .metrics-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 30px;
+    }
+    .metric-card {
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      padding: 18px 20px;
+      border-radius: 12px;
+    }
+    .metric-title { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; }
+    .metric-val { font-size: 1.6rem; font-weight: 800; margin-top: 4px; }
+
+    /* Comparison Table Container */
+    .comparison-wrapper {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 30px;
+    }
+    .table-panel {
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      border-radius: 14px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .table-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--panel-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .table-header h3 { font-size: 1rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .badge-dirty { background: rgba(239, 68, 68, 0.2); color: #f87171; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; }
+    .badge-clean { background: rgba(16, 185, 129, 0.2); color: #34d399; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    th, td {
+      padding: 10px 14px;
+      text-align: left;
+      border-bottom: 1px solid #1a2233;
+    }
+    th {
+      background: #0d121f;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.72rem;
+      letter-spacing: 0.5px;
+    }
+    td { font-family: 'JetBrains Mono', monospace; }
+    .cell-error { background: rgba(239, 68, 68, 0.15); color: #fca5a5; }
+    .cell-fixed { background: rgba(16, 185, 129, 0.12); color: #6ee7b7; font-weight: 600; }
+
+    /* Pipeline Logs Terminal */
+    .terminal-box {
+      background: var(--code-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      padding: 20px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+    }
+    .terminal-title {
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .log-line { margin-bottom: 6px; }
+    .log-success { color: var(--success); }
+    .log-info { color: var(--accent); }
+    .log-warn { color: var(--warning); }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">⚡ OmniClean <span>Analytics</span></div>
+    <div style="display:flex; align-items:center; gap:16px;">
+      <a href="mailto:nirojnalinimajhi@gmail.com?subject=Inquiry%20regarding%20Development%20&%20Automation%20Project" style="color:var(--accent); text-decoration:none; font-size:0.85rem; font-weight:700;">Email</a>
+      <span style="color:var(--panel-border);">|</span>
+      <a href="https://wa.me/917978928014?text=Hello%20Niroj,%20I%20saw%20your%20portfolio%20and%20would%20like%20to%20discuss%20a%20project." target="_blank" style="color:#25D366; text-decoration:none; font-size:0.85rem; font-weight:700;">WhatsApp: +91 7978928014</a>
+      <div class="status-pill">
+        <div class="status-dot"></div> Python Pandas Data Pipeline Ready
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Top Action Box -->
+    <div class="hero-box">
+      <div>
+        <h1>Turn 100,000+ Dirty CSV Rows into Clean Analytics in Seconds</h1>
+        <p>Demonstration of automated deduplication, currency standardization, date unification (ISO 8601), and anomaly rejection pipelines built for enterprise clients.</p>
+      </div>
+      <button class="clean-btn" id="runPipelineBtn" onclick="executeCleanPipeline()">
+        ▶ Run Automated Pipeline
+      </button>
+    </div>
+
+    <!-- Live Counters -->
+    <div class="metrics-row">
+      <div class="metric-card">
+        <div class="metric-title">Input Dirty Records</div>
+        <div class="metric-val" id="rawCount">1,420</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-title">Duplicate Rows Dropped</div>
+        <div class="metric-val" style="color: var(--danger);" id="dupCount">0</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-title">Null / Bad Values Fixed</div>
+        <div class="metric-val" style="color: var(--warning);" id="nullCount">0</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-title">Pipeline Runtime</div>
+        <div class="metric-val" style="color: var(--success);" id="timeCount">0.00s</div>
+      </div>
+    </div>
+
+    <!-- Live Comparison Grid -->
+    <div class="comparison-wrapper">
+      
+      <!-- Dirty Raw Input Table -->
+      <div class="table-panel">
+        <div class="table-header">
+          <h3>Raw Vendor Feed <span class="badge-dirty">DIRTY / UNCLEANED</span></h3>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Order ID</th>
+              <th>Customer</th>
+              <th>Date</th>
+              <th>Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="cell-error">#INV-9021</td>
+              <td>rahul sharma</td>
+              <td class="cell-error">12/05/2026</td>
+              <td class="cell-error">$ 4,500.00 USD</td>
+            </tr>
+            <tr>
+              <td>#INV-9022</td>
+              <td>Priya Patel</td>
+              <td class="cell-error">2026.05.14</td>
+              <td>₹12,400</td>
+            </tr>
+            <tr>
+              <td class="cell-error">#INV-9021</td>
+              <td>RAHUL SHARMA</td>
+              <td class="cell-error">12/05/2026</td>
+              <td class="cell-error">4500</td>
+            </tr>
+            <tr>
+              <td>#INV-9023</td>
+              <td class="cell-error">N/A (Missing)</td>
+              <td>2026-05-15</td>
+              <td class="cell-error">-₹999.00</td>
+            </tr>
+            <tr>
+              <td>#INV-9024</td>
+              <td>Vikram Roy</td>
+              <td class="cell-error">16-May-2026</td>
+              <td>₹8,250.00</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Clean Pipeline Output Table -->
+      <div class="table-panel">
+        <div class="table-header">
+          <h3>Clean Data Warehouse View <span class="badge-clean" id="cleanBadge">AWAITING TRIGGER</span></h3>
+        </div>
+        <table id="cleanTable">
+          <thead>
+            <tr>
+              <th>Invoice UUID</th>
+              <th>Standard Name</th>
+              <th>ISO Date</th>
+              <th>Net INR</th>
+            </tr>
+          </thead>
+          <tbody id="cleanTbody">
+            <tr>
+              <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 40px 0;">
+                Click "Run Automated Pipeline" above to execute Pandas data cleaning.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+    <!-- Terminal Pipeline Execution Log -->
+    <div class="terminal-box">
+      <div class="terminal-title">Python Pipeline Console Output</div>
+      <div id="consoleLog">
+        <div class="log-line log-info">> Loaded data source: raw_multivendor_sales_stream.csv (1,420 rows)</div>
+        <div class="log-line log-info">> Waiting for batch execution trigger...</div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    function executeCleanPipeline() {
+      const btn = document.getElementById('runPipelineBtn');
+      btn.innerText = "Processing Data...";
+      btn.disabled = true;
+
+      const consoleLog = document.getElementById('consoleLog');
+      consoleLog.innerHTML = `
+        <div class="log-line log-info">> [Pandas] df = pd.read_csv('raw_vendor_feed.csv')</div>
+        <div class="log-line log-warn">> [Step 1] Normalizing column headers to lowercase snake_case...</div>
+        <div class="log-line log-warn">> [Step 2] Found 142 duplicate invoices. Running df.drop_duplicates(subset=['order_id'])...</div>
+        <div class="log-line log-warn">> [Step 3] Parsing mixed date strings [MM/DD/YYYY, YYYY.MM.DD, DD-Mon] -> ISO 8601 YYYY-MM-DD...</div>
+        <div class="log-line log-warn">> [Step 4] Normalizing mixed multi-currency amounts ($ USD / ₹ INR) to unified Float64...</div>
+        <div class="log-line log-success">> [Step 5] Imputing missing customer entities and flagging negative anomaly refund...</div>
+        <div class="log-line log-success">> [SUCCESS] Transformed 1,420 rows into production-ready dataset in 0.18s!</div>
+      `;
+
+      setTimeout(() => {
+        document.getElementById('dupCount').innerText = "142";
+        document.getElementById('nullCount').innerText = "38";
+        document.getElementById('timeCount').innerText = "0.18s";
+        document.getElementById('cleanBadge').innerText = "PRODUCTION VALIDATED";
+
+        const tbody = document.getElementById('cleanTbody');
+        tbody.innerHTML = `
+          <tr>
+            <td class="cell-fixed">INV-009021</td>
+            <td class="cell-fixed">Rahul Sharma</td>
+            <td class="cell-fixed">2026-05-12</td>
+            <td class="cell-fixed">₹3,73,500.00</td>
+          </tr>
+          <tr>
+            <td class="cell-fixed">INV-009022</td>
+            <td class="cell-fixed">Priya Patel</td>
+            <td class="cell-fixed">2026-05-14</td>
+            <td class="cell-fixed">₹12,400.00</td>
+          </tr>
+          <tr>
+            <td class="cell-fixed">INV-009023</td>
+            <td class="cell-fixed">Guest Customer (Flagged)</td>
+            <td class="cell-fixed">2026-05-15</td>
+            <td class="cell-fixed">₹0.00 (Refunded)</td>
+          </tr>
+          <tr>
+            <td class="cell-fixed">INV-009024</td>
+            <td class="cell-fixed">Vikram Roy</td>
+            <td class="cell-fixed">2026-05-16</td>
+            <td class="cell-fixed">₹8,250.00</td>
+          </tr>
+        `;
+
+        btn.innerText = "✓ Pipeline Verified Clean";
+        btn.style.background = "#10b981";
+      }, 500);
+    }
+  </script>
+</body>
+</html>
